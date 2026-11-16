@@ -17,9 +17,9 @@ Eine KI ohne Kontext rät. Das englische Wort "Share" bedeutet in *Nextcloud Tal
 * **KI-Instruktion:** Der System-Prompt muss **immer** den Namen der Nextcloud-App (z. B. `deck`, `calendar`, `files_sharing`) als Kontextparameter enthalten.
 * **Beispiel-Prompt-Zusatz:** *"Du übersetzt Strings für die Nextcloud-App 'Deck' (Kanban-Projektmanagement). Übersetze 'Board' nicht mit 'Brett', sondern behalte 'Board' bei."*
 
-### 3. Der Nextcloud-Tonfall: de_DE (Informell) vs. de_DE_formal
-Nextcloud unterscheidet strikt zwischen dem lockeren "Du" (`de`) und dem geschäftlichen "Sie" (`de_DE_formal`). KIs mischen das gerne innerhalb eines Satzes, wenn man sie nicht zwingt.
-* **KI-Instruktion:** Wir generieren standardmäßig für `de` (informell). Der KI muss per System-Prompt ein striktes "Verwende ausschließlich das respektvolle 'Du' und niemals 'Sie'" vorgegeben werden.
+### 3. Der Nextcloud-Tonfall: de (informell) vs. de_DE (formell)
+Nextcloud unterscheidet strikt zwischen dem lockeren "du" (`de`) und dem geschäftlichen "Sie" (`de_DE`). KIs mischen das gerne innerhalb eines Satzes, wenn man sie nicht zwingt.
+* **KI-Instruktion:** Die Variante wird per System-Prompt fest vorgegeben: für `de` "Verwende ausschließlich 'du' und niemals 'Sie'", für `de_DE` "Verwende ausschließlich 'Sie' und niemals 'du'".
 * **Regel:** Keine passiv-aggressiven oder zu roboterhaften Formulierungen.
 * **Hinweis:** Laut Beschluss der Übersetzer-Treffen wird die direkte Anrede ("du"/"Sie") wo sinnvoll möglich ganz vermieden (siehe Regel 4.1).
 
@@ -89,7 +89,7 @@ python3 -m unittest discover -s tests
 
 | Code | Stufe | Regel |
 |---|---|---|
-| `placeholder` | Fehler | Platzhalter (`%s`, `%1$s`, `%n`, `{user}`) wie in der Quelle (Regel 1) |
+| `placeholder` | Fehler | Platzhalter (`%s`, `%1$s`, `%n`, `{user}`) wie in der Quelle (Regel 1); `%n` nur, wenn es in der Quelle steht |
 | `nbsp-ellipsis` | Fehler | nbsp vor "…" |
 | `nbsp-unit` | Fehler | nbsp zwischen Zahl und `%`, `°`, `€` |
 | `z-b` | Fehler | "z.&nbsp;B." mit nbsp |
@@ -102,5 +102,12 @@ python3 -m unittest discover -s tests
 | `filler` | Hinweis | "wirklich"/"erfolgreich" ohne Entsprechung in der Quelle |
 | `warning` | Hinweis | "Warning" ➡️ "Achtung" |
 | `configuration` | Hinweis | "Konfiguration" statt "Einrichtung" |
+| `placeholder-spacing` | Fehler | Platzhalter nicht an ein Wort kleben, wenn die Quelle ein Leerzeichen hat (Genitiv `{user}s` erlaubt) |
+| `doubled-word` | Fehler | doppeltes Wort ("mit mit"); bei Artikeln und "sie" nur Hinweis, da Relativsätze ("die die") korrekt sein können |
+| `old-spelling` | Fehler | alte oder Schweizer Schreibung ("muß", "weiss", "Fusszeile") |
+| `soft-hyphen` | Fehler | weiches Trennzeichen (U+00AD), das nicht in der Quelle steht |
 
 Hinweise sind Kandidaten zur manuellen Prüfung. Mit `--strict` führen auch sie zu Exit-Code 1, mit `--no-hints` werden sie ausgeblendet.
+
+## 🧭 Arbeitsanweisung für Agenten
+Wie ein KI-Agent mit diesen Regeln übersetzt und bestehende Übersetzungen korrigiert, steht in [agent-guideline.md](agent-guideline.md).

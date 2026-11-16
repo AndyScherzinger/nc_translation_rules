@@ -172,6 +172,18 @@ TERMS = {
 }
 
 
+_GLUED_PLACEHOLDER = re.compile(r"(%(?:\d+\$)?[sdfun]|\{[A-Za-z0-9_.-]+\})(?=[^\W\d_])")
+
+_DOUBLED_WORD = re.compile(r"\b([^\W\d_]+)\s+\1\b")
+_DOUBLED_WORD_ALLOWED = {"der", "die", "das", "den", "dem", "des", "sie", "Sie"}
+
+_OLD_SPELLING = re.compile(
+    r"\b(?:[Dd]aß|[Mm]uß(?:t|te|ten)?|[Ll]äßt|[Uu]mfaßt\w*|\w*[Ss]chluß\w*|[Bb]ißchen|[Ww]ußte\w*|[Gg]ewußt"
+    r"|[Ww]eisst?|[Aa]usser(?:dem|halb)?|[Ff]uss\w*|[Ss]trasse\w*|[Gg]rüsse\w*|[Ss]chliesslich)\b"
+)
+
+_URL = re.compile(r"https?://\S+")
+
 _FORMAL_WORD = re.compile(r"\b(Sie|Ihnen|Ihre[mnrs]?)\b")
 
 
@@ -196,6 +208,30 @@ def check_entry(entry: Entry, variant: str | None) -> Iterator[tuple[str, str, s
     # %n darf in der Singularform fehlen ("eine Datei" für "%n file").
     if src_ph != tgt_ph and [p for p in src_ph if p != "%n"] != [p for p in tgt_ph if p != "%n"]:
         yield ERROR, "placeholder", f"Platzhalter weichen ab: Quelle {src_ph}, Übersetzung {tgt_ph}"
+    elif "%n" in tgt_ph and "%n" not in src_ph:
+        yield ERROR, "placeholder", "Platzhalter %n steht nicht in der Quelle"
+
+    glued_src = set(_GLUED_PLACEHOLDER.findall(src))
+    glued = [
+        m.group(1)
+        for m in _GLUED_PLACEHOLDER.finditer(tgt)
+        if m.group(1) not in glued_src
+        and not (re.match(r"s\b", tgt[m.end():]) and re.search(re.escape(m.group(1)) + r"['’]s\b", src))
+    ]
+    if glued:
+        yield ERROR, "placeholder-spacing", f"Platzhalter ohne Leerzeichen an ein Wort geklebt: {glued}"
+
+    for match in _DOUBLED_WORD.finditer(tgt):
+        if match.group(0) in src:
+            continue
+        severity = HINT if match.group(1) in _DOUBLED_WORD_ALLOWED else ERROR
+        yield severity, "doubled-word", f"Doppeltes Wort: \"{match.group(0)}\""
+
+    for match in _OLD_SPELLING.finditer(tgt):
+        yield ERROR, "old-spelling", f"Alte oder Schweizer Rechtschreibung: \"{match.group(0)}\""
+
+    if "­" in tgt and "­" not in src:
+        yield ERROR, "soft-hyphen", "Weiches Trennzeichen (U+00AD) steht nicht in der Quelle"
 
     if "  " in tgt and "  " not in src:
         yield ERROR, "double-space", "Doppeltes Leerzeichen"
@@ -212,7 +248,7 @@ def check_entry(entry: Entry, variant: str | None) -> Iterator[tuple[str, str, s
     if re.search(r"[„“”‚‘]", tgt):
         yield ERROR, "quotes", "Anführungszeichen wie im Englischen verwenden: \"Hallo\" statt „Hallo“"
 
-    if re.search(r"(?i)master|slave", tgt):
+    if re.search(r"(?i)master|slave", _URL.sub("", tgt)):
         yield ERROR, "master-slave", "Keine Formulierungen mit Master/Slave (z. B. \"Hauptpasswort\")"
 
     for pattern, preferred in TERMS.items():
@@ -294,4 +330,5 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(errors="backslashreplace")
     sys.exit(main())
