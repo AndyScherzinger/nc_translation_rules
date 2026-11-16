@@ -15,6 +15,10 @@ def codes(source, target, variant=None):
     return {code for _sev, code, _msg in ct.check_entry(ct.Entry(source, target, 1), variant)}
 
 
+def severities(source, target, variant=None):
+    return {(sev, code) for sev, code, _msg in ct.check_entry(ct.Entry(source, target, 1), variant)}
+
+
 class RuleTests(unittest.TestCase):
     def test_clean_string_has_no_findings(self):
         self.assertEqual(codes("Loading …", f"Lade{NBSP}…"), set())
@@ -76,6 +80,37 @@ class RuleTests(unittest.TestCase):
         # Satzanfang ist mehrdeutig ("Sie" = "they")
         self.assertNotIn("formal-in-informal", codes("x", "Sie haben die Datei geteilt.", "informal"))
         self.assertNotIn("formal-in-informal", codes("x", "Gib dein Passwort ein", "informal"))
+
+    def test_placeholder_not_in_source(self):
+        self.assertIn("placeholder", codes("on the configured connection (%s)", "auf der %n Verbindung (%s)"))
+        self.assertNotIn("placeholder", codes("%n files", "Eine Datei"))
+
+    def test_placeholder_spacing(self):
+        self.assertIn("placeholder-spacing", codes("all of the %n configured", "allen %nkonfigurierten"))
+        self.assertIn("placeholder-spacing", codes("Hello {user}!", "Hallo {user}chen!"))
+        self.assertNotIn("placeholder-spacing", codes("all of the %n configured", "allen %n konfigurierten"))
+        self.assertNotIn("placeholder-spacing", codes("{count}x", "{count}x"))
+        self.assertNotIn("placeholder-spacing", codes("Wipe {userid}'s devices", "{userid}s Geräte löschen"))
+        self.assertIn("placeholder-spacing", codes("%s modified %s", "%shat %s geändert"))
+
+    def test_doubled_word(self):
+        self.assertIn("doubled-word", codes("synced with all devices", "mit mit allen Geräten"))
+        self.assertIn(("error", "doubled-word"), severities("x", "Bist du sicher sicher?"))
+        self.assertIn(("hint", "doubled-word"), severities("x", "Dateien, die die Administration teilt"))
+        self.assertNotIn("doubled-word", codes("x", "Diese Regeln regeln den Zugriff"))
+
+    def test_old_spelling(self):
+        for word in ("Muß", "mußt", "umfaßte", "Ausschlußmaske", "weiss", "Ausserdem", "Fusszeile"):
+            self.assertIn("old-spelling", codes("x", f"{word} hier"))
+        for word in ("Muss", "weiß", "Außerdem", "Fußzeile", "Maßnahme", "Weissenburg"):
+            self.assertNotIn("old-spelling", codes("x", f"{word} hier"))
+
+    def test_soft_hyphen(self):
+        self.assertIn("soft-hyphen", codes("synced", "syn­chro­ni­siert"))
+        self.assertNotIn("soft-hyphen", codes("syn­ced", "syn­chro­ni­siert"))
+
+    def test_master_slave_ignores_urls(self):
+        self.assertNotIn("master-slave", codes("x", "![x](https://github.com/nextcloud/app/master/shot.png)"))
 
     def test_informal_in_formal(self):
         self.assertIn("informal-in-formal", codes("x", "Gib dein Passwort ein", "formal"))
