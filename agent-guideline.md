@@ -71,6 +71,7 @@ Die Prüfberichte vom 13.11.2026 (de: 252, de_DE: 197 Fundstellen) zeigen, wo Ü
 | Nominalisierung | `Importierung` | `Import` |
 | Interjektion | `Upps` | `Ups` |
 | Gender-Neutral | `Administrator, Administratorin` | `Administration` |
+| Wortvorgaben | `Nutzer` | `Benutzer` |
 
 Produkt- und App-Namen werden wie im Original geschrieben (`Nextcloud`, `Zammad`, `Discourse`, `Recognize`).
 
