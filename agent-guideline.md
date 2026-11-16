@@ -70,6 +70,7 @@ Die Prüfberichte vom 13.11.2026 (de: 252, de_DE: 197 Fundstellen) zeigen, wo Ü
 | Kleinschreibung nach Klammer | `TOTP (Zeitbasiert)` | `TOTP (zeitbasiert)` |
 | Nominalisierung | `Importierung` | `Import` |
 | Interjektion | `Upps` | `Ups` |
+| Gender-Neutral | `Administrator, Administratorin` | `Administration` |
 
 Produkt- und App-Namen werden wie im Original geschrieben (`Nextcloud`, `Zammad`, `Discourse`, `Recognize`).
 
